@@ -1,0 +1,148 @@
+---
+title: "SA_Ass1"
+author: "Jakub Raszka"
+date: "5 2 2021"
+output: word_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+# Packages
+pacman::p_load(leaflet, htmltools, htmlwidgets, tidyverse, ggplot2, reader)
+
+```
+
+## Task
+W1 - Make me an interactive map
+
+
+1. Answer: Describe a problem or question in your field for which spatial analysis could be applicable.
+
+Let's imagine a situation which we can only hope to never occur, yet we know has happened, it is happening and it will happen again. In a last year, in the Czech Republic, doctors have examined many patients throughout the republic whose symptoms resemble a severe intoxication. Yet, none of the patients has been in tought with any toxis substances. As the number of patients keeps rising, doctors in colaboration with advanced data specialists, aka cognitive scienticts, are determined to discover the source of poisoning.
+Home and work address of all patients are obtained and mapped along with any locations where patients regularly spent substantial amount of time.
+
+2. Answer: List 5 data layers that you think are necessary to answer your question/solve your problem. Find on the internet github.and then describe examples of two or three of your listed layers.
+
+There are many data layers required, to name a few, surface terrain (specifically hydrography), ownership and tax parcels, a layer of industrial network (factories, chemical plants, or any other establishment with potential of causing large-scale contamination), a layer of man-made infrastructure (roads, buildings),  and a list of potentially plausible substances produced in each factory. 
+The hydrography layer is important to map all water areas which could potentially connect a factory and patients through water. The layer of man-made infrastructure is useful when aligning other layers with addresses of patients given by patients.
+
+
+
+3. Code: Your colleague has found some ruins during a hike in the Blue Mountains and recorded the coordinates of structures on her phone(RCFeature.csv). She would like to map her points but has no computer or mapping skills. Can you make a map that she can work with using only a browser? She needs an interactive map that she can download to her computer and use straightaway.
+
+```{r}
+# loading data
+df <- read_csv("RCFeature.csv")
+
+# filtering out 1 NA observation
+df <- df %>% filter(!is.na(Longitude))
+
+
+# trying out whether the setView is set at correct location, zoom with only 3 map layers
+leaflet() %>%
+  setView(lng = 150.2965, lat = -33.76165, zoom = 12) %>% 
+  addProviderTiles("Esri.WorldPhysical") %>% 
+ addProviderTiles("Esri.WorldImagery") %>% 
+  addProviderTiles("MtbMap", group = "Geo") %>% 
+  addAwesomeMarkers(lng = df$Longitude,
+                    lat = df$Latitude, 
+                    popup = df$FeatureType)
+
+
+# Making an interactive map with multiple choice of map types, terrains
+
+## setting initial view coordinate and zoom which we got from data  
+
+l_den <- leaflet() %>%   # assign the base location to an object
+  setView(150.2965, -33.76165, zoom = 12)
+
+
+## creating a list with all possible map layers and  providers
+esri <- grep("^Esri", providers, value = TRUE)
+
+## putting them into a line so we don't have to repeat ourselves later on
+for (provider in esri) {
+  l_den <- l_den %>% addProviderTiles(provider, group = provider)
+}
+
+
+## setting features of the map
+BM_map <- l_den %>%
+  addLayersControl(baseGroups = names(esri),
+                   options = layersControlOptions(collapsed = FALSE)) %>%
+  
+  # adding minimap and choosin gits layer, position in the map
+  addMiniMap(tiles = esri[[1]], toggleDisplay = TRUE,
+             position = "bottomright") %>%
+  
+  # adding a possibility of measuring distances
+  addMeasure(
+    position = "bottomleft",
+    primaryLengthUnit = "meters",
+    primaryAreaUnit = "sqmeters",
+    activeColor = "#3D535D",
+    completedColor = "#7D4479") %>% 
+  htmlwidgets::onRender("
+                        function(el, x) {
+                        var myMap = this;
+                        myMap.on('baselayerchange',
+                        function (e) {
+                        myMap.minimap.changeLayer(L.tileLayer.provider(e.name));
+                        })
+                        }") %>% 
+  addControl("", position = "topright")
+
+
+## the map is ready, now we shall align it with our desired locations 
+BM_map <- BM_map %>% 
+  addCircleMarkers(lng = df$Longitude, 
+             lat = df$Latitude,
+             
+             # given the density and immediate proximity of data locations, I think that clusteroptions is a nice improvement in viewing every single datapoint. However, if we just want to get a feeling for the distribution without any info about the data points, the cluster options, should be tagged out
+             clusterOptions = markerClusterOptions(), # 
+             
+             # setting size by the accuracy (and multiplying for the ease of finding all of them)
+             radius = df$Accuracy*1.5,
+              
+             
+             # setting parameters of label when hoovered over a marker
+             label = paste("FeatureId: ", df$FeatureID,
+                           ",  Feature Type:", df$FeatureType,
+                           ",  Description:", df$Description, sep = "\n"))
+
+BM_map
+
+# saving the map as html
+saveWidget(BM_map, "BM_map.html", selfcontained = TRUE)
+
+
+# considered alternative for labels
+# str_c(str_c("Feature ID:", df$FeatureID),
+#                            str_c("Feature Type:", df$FeatureType, sep = " "),
+#                            str_c("Description:", df$Description, sep = " "),
+#                            sep = "<br/>")
+```
+
+
+4. Create a standalone .html map in Leaflet showing at least basic topography and relief, and load in the table of points. Make sure she can see the FeatureID, FeatureType and Description attributes when she hovers over the point markers. 
+
+5. Consider adding elements such as minimap() and measure() for easier map interaction
+6. Explore differentiating the markers (e.g. by size using Accuracy field)
+
+7. Explore the option of clustering markers with addMarkers(clusterOptions = markerClusterOptions()). Do you recommend marker clustering here?
+
+
+
+Submit here both a brief write up and the .R script and the .html map. Alternatively, submit answer to the questions and a link to Github repo where both files are deposited.
+
+
+
+
+
+
+
+
+
+
+
