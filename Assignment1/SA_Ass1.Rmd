@@ -19,14 +19,14 @@ W1 - Make me an interactive map
 
 1. Answer: Describe a problem or question in your field for which spatial analysis could be applicable.
 
-Let's imagine a situation which we can only hope to never occur, yet we know has happened, it is happening and it will happen again. In a last year, in the Czech Republic, doctors have examined many patients throughout the republic whose symptoms resemble a severe intoxication. Yet, none of the patients has been in tought with any toxis substances. As the number of patients keeps rising, doctors in colaboration with advanced data specialists, aka cognitive scienticts, are determined to discover the source of poisoning.
-Home and work address of all patients are obtained and mapped along with any locations where patients regularly spent substantial amount of time.
+Let's imagine a situation in which we can only hope to never occur, yet we know has happened, it is happening and it will happen again. In a given region, doctors have examined many patients across entire region whose symptoms resembled a severe intoxication. Yet, none of the patients has been in touch with any toxic substances. As the number of patients keeps rising, doctors in collaboration with advanced data specialists, a.k.a cognitive scientists, are determined to discover the source of suspected poisoning.
+To do so, home and work address of all patients are obtained and mapped along with any locations wherein patients regularly spent substantial amount of their time.
 
 2. Answer: List 5 data layers that you think are necessary to answer your question/solve your problem. Find on the internet github.and then describe examples of two or three of your listed layers.
 
-There are many data layers required, to name a few, surface terrain (specifically hydrography), ownership and tax parcels, a layer of industrial network (factories, chemical plants, or any other establishment with potential of causing large-scale contamination), a layer of man-made infrastructure (roads, buildings),  and a list of potentially plausible substances produced in each factory. 
-The hydrography layer is important to map all water areas which could potentially connect a factory and patients through water. The layer of man-made infrastructure is useful when aligning other layers with addresses of patients given by patients.
-
+There are many data layers required, to name a few, surface terrain (specifically hydrography), ownership and tax parcels, a layer of industrial network (factories, chemical plants, or any other establishment with potential of causing large-scale contamination), a layer of man-made infrastructure (roads, buildings),  and a list of potentially plausible substances produced in each factory. Lastly, a layer of all accidents in the region with fine temporal resolution. Likewise, the temporal resolution of patients movement and time of contagion is necessary.
+The hydrography layer is important to map all water areas which could potentially connect a factory and patients through water. The significance of temporal layers lie in the possibility of discovering overlaps of accidents in patient's physical proximity in time. 
+In such cases, if we imagine that usual tracking approaches fail, the number of is skyrocketing, there is always an option of using  personal data from patient's gadgets. Such a solution is highly controversial as we can see nowadays... 
 
 
 3. Code: Your colleague has found some ruins during a hike in the Blue Mountains and recorded the coordinates of structures on her phone(RCFeature.csv). She would like to map her points but has no computer or mapping skills. Can you make a map that she can work with using only a browser? She needs an interactive map that she can download to her computer and use straightaway.
@@ -99,7 +99,7 @@ BM_map <- BM_map %>%
   addCircleMarkers(lng = df$Longitude, 
              lat = df$Latitude,
              
-             # given the density and immediate proximity of data locations, I think that clusteroptions is a nice improvement in viewing every single datapoint. However, if we just want to get a feeling for the distribution without any info about the data points, the cluster options, should be tagged out
+             #  clustering
              clusterOptions = markerClusterOptions(), # 
              
              # setting size by the accuracy (and multiplying for the ease of finding all of them)
@@ -114,7 +114,7 @@ BM_map <- BM_map %>%
 BM_map
 
 # saving the map as html
-saveWidget(BM_map, "BM_map.html", selfcontained = TRUE)
+#saveWidget(BM_map, "BM_map.html", selfcontained = TRUE)
 
 
 # considered alternative for labels
@@ -131,6 +131,8 @@ saveWidget(BM_map, "BM_map.html", selfcontained = TRUE)
 6. Explore differentiating the markers (e.g. by size using Accuracy field)
 
 7. Explore the option of clustering markers with addMarkers(clusterOptions = markerClusterOptions()). Do you recommend marker clustering here?
+
+Given the density and immediate proximity of data locations, I think that clusteroptions is a nice improvement in viewing every single data point. However, if we just want to get a feeling for the distribution without any info about the data points, the cluster options, should be tagged out.
 
 
 
