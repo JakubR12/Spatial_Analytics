@@ -4,12 +4,13 @@ author: "Jakub Raszka"
 date: "5 2 2021"
 output: word_document
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
 # Packages
-pacman::p_load(leaflet, htmltools, htmlwidgets, tidyverse, ggplot2, reader)
+pacman::p_load(leaflet, htmltools, htmlwidgets, tidyverse, ggplot2, reader, raster, sf)
+
 
 ```
 
