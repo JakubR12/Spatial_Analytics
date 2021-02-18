@@ -56,7 +56,7 @@ cities_sf3035 <- st_transform(cities_sf4326, crs = st_crs(3035))
 
 # Verify the projection is 'projected' not 'geographic'
 st_crs(cities_sf3035)
-
+class(cities_sf3035)
 ```
 
 
@@ -92,7 +92,7 @@ Well, a quick review may look ok, but you cannot be sure your buffers work well 
 ```{r tmap, eval=FALSE}
 # Grab the first 10 elements in the sf object and the buffer
 ten_buffers <- cities_5km %>% slice(1:10)
-ten_cities <- cities %>% slice(1:10)
+ten_cities <- cities_sf3035 %>% slice(1:10)
 
 # Create a quick tmap
 library(tmap)
@@ -117,7 +117,6 @@ tm_shape(ten_buffers)  +
             inner.margins = c(0, 0, 0, 0))
 
 
-?tm_scale_bar()
 ```
 
 
@@ -138,10 +137,11 @@ The json dataset is hefty with some 12 thousand inscriptions and 74 variables. C
 # Libraries
 library(tidyverse)
 library(jsonlite)
-library(tidytext)
+
 
 # Download the file and save as inscriptions.json (consider commenting out after you first run to avoid repeat downloading)
 #download.file("https://sciencedata.dk/public/b6b6afdb969d378b70929e86e58ad975/EDH_subset_2021-02-15.json", "../data/inscriptions.json")
+
 
 # Load it into R from wherever you put it, and convert into a tibble
 list_json <- jsonlite::fromJSON("../data/inscriptions.json")
@@ -152,15 +152,19 @@ glimpse(inscriptions)
 
 
 # Wrangle the coordinates into a plottable  format
-i_sm <- inscriptions %>% 
-  slice(1:100) %>% 
-  separate(col = coordinates, into = c("longitude","latitude"), sep = ",") %>%
-  mutate(longitude = as.numeric(str_replace(longitude,  "c\\(","")),
+i_sm <- inscriptions %>%
+  slice(1:100) %>%
+  separate(
+    col = coordinates,
+    into = c("longitude", "latitude"),
+    sep = ","
+  ) %>%
+  mutate(longitude = as.numeric(str_replace(longitude,  "c\\(", "")),
          latitude = as.numeric(str_replace(latitude, "\\)", "")))
 
 
 # Check the result of the subset, does the location look reasonable?
-leaflet() %>% addTiles() %>% addMarkers(lng=i_sm$longitude,lat=i_sm$latitude)
+leaflet() %>% addTiles() %>% addMarkers(lng = i_sm$longitude, lat = i_sm$latitude)
 ```
 
 Oooof. That was some serious wrangling! 
@@ -180,19 +184,26 @@ Now that the hard work is done, let's apply the wrangling to the full dataset an
 * Plot your data using st_geometry()
 
 ```{r insc-sf, eval=FALSE}
-i <- inscriptions %>% 
-  separate( __________) %>% 
-  mutate(___________) %>% 
-  filter(____________) %>% 
-  filter(__________) %>% 
-  filter(longitude > 5 && longitude < 20)
+i <- inscriptions %>%
+  separate(
+    col = coordinates,
+    into = c("longitude", "latitude"),
+    sep = ","
+  ) %>%
+  mutate(
+    longitude = as.numeric(str_replace(longitude,  "c\\(", "")),
+    latitude = as.numeric(str_replace(latitude, "\\)", ""))) %>%
+      filter(!is.na(longitude)) %>%
+      filter(!is.na(latitude)) %>%
+      filter(longitude > 5 && longitude < 20
+      )
 
 
 # Create a sf object
-insc_sf4326 <- st_as_sf(i, coords = ___________, crs = _________)
+insc_sf4326 <- st_as_sf(i, coords = c("longitude","latitude"), crs = st_crs(4326))
 
 # Plot
-plot(__________(insc_sf4326))
+plot(st_geometry(insc_sf4326))
 ```
 
 # Task 6: Select inscriptions that fall into the cities' buffer
@@ -208,26 +219,32 @@ To reduce the computational intensity of the final intersection, it is a good id
 
 ```{r intersection, eval=FALSE}
 # Project the sf object into EPSG3035 so it is consistent with cities and their buffers
-insc_sf3035 <- st_transform(________________)
+insc_sf3035 <- st_transform(insc_sf4326,crs = st_crs(3035))
 
 
 # Create a convex hull around the inscriptions's points dissolved into a MULTIPOINT
-insc_ch <- st_convex_hull(_________(insc_sf3035))
+insc_ch <- st_convex_hull(st_union(insc_sf3035))
 
 # Create a buffer from a cluster of cities that fall within the convex hull 
-cities_it <- st_intersection(insc_ch, _________(cities_5km))
+cities_it <- st_intersection(insc_ch, st_buffer(cities_5km, dist = 5000))
+
 
 # Dissolve the 399 buffers into a single MULTIPOLYGON buffer feature
 c_buff <- st_union(cities_it)
 
 # Calculate the number of inscriptions in urban and rural areas. This may take a couple seconds
-insc_urban <- ____________(insc_sf3035, c_buff)
-insc_rural <- ____________(insc_sf3035, c_buff)
+insc_urban <- st_intersection(insc_sf3035, c_buff)
+insc_rural <- st_difference(insc_sf3035, c_buff)
+
+#get the ratio
+insc_urban %>% nrow()/insc_rural %>% nrow()
+
 ```
 
 ### Question 3: 
 *What is the ratio of urban to rural inscriptions?*
 
+*There are  9.39621 more incsriptions in urban areas than rural areas.*
  
 # Task 7: CHALLENGE - Duplicates and average distance 
 
